@@ -111,7 +111,8 @@ A run writes the full report to `results/final/report.md` (tables, plots, per-ty
 ## Dataset
 
 Every number above comes from **LongMemEval-S (cleaned)**. LongMemEval is a benchmark for the long-term memory of chat
-assistants, published at ICLR 2025 (Wu et al., [references](#references)). Each question comes with its own long chat
+assistants, published at ICLR 2025 (Wu et al.,[LongMemEval: Benchmarking chat assistants on long-
+term interactive memory,](https://github.com/xiaowu0162/LongMemEval)). Each question comes with its own long chat
 history between one user and an assistant. The answer is spread somewhere in that history, among many unrelated
 sessions.
 
