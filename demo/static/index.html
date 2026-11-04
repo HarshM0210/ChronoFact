@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ChronoFact · Time-aware memory</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/styles.css?v=20261104b">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%233987e5'/%3E%3Cstop offset='1' stop-color='%239085e9'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='8' fill='url(%23g)'/%3E%3Ccircle cx='16' cy='16' r='9' fill='none' stroke='white' stroke-width='2.6'/%3E%3Cpath d='M16 11v5l3.5 2.4' fill='none' stroke='white' stroke-width='2.6' stroke-linecap='round'/%3E%3C/svg%3E">
+</head>
+<body>
+<header>
+  <div class="brand">
+    <div class="logo"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+    <div><h1>ChronoFact</h1><p>Time-aware, verified memory for AI assistants</p></div>
+  </div>
+  <nav id="nav">
+    <button data-v="live" class="on">Live memory</button>
+    <button data-v="ask">Ask across time</button>
+    <button data-v="bench">Benchmark explorer</button>
+    <button data-v="results">Results</button>
+    <button data-v="how">How it works</button>
+  </nav>
+  <div class="hdr-right">
+    <span class="chip llama">Llama 3.1 8B</span><span class="chip">Contriever</span><span class="chip">BART-MNLI</span>
+    <button class="iconbtn" id="theme" title="Light / dark"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+  </div>
+</header>
+
+<main>
+<!-- ============================================================ LIVE -->
+<section class="view on" id="v-live">
+  <div class="live">
+    <div class="panel">
+      <div class="ph"><h2>Conversation</h2><span class="sub">real assistant, real memory</span>
+        <div class="right"><button class="btn" id="reset" title="Start with an empty memory">Reset</button></div></div>
+      <div class="storybar">
+        <button class="btn primary" id="storyNext">▶ Story step <span id="storyIdx">1</span>/<span id="storyN">9</span></button>
+        <div class="cap" id="storyCap">Six months with Maya: each step shows one capability.</div>
+      </div>
+      <div class="datebar">Session date <input type="date" id="date" value="2025-01-06"> <span id="dateHuman"></span></div>
+      <div class="chat" id="chat"></div>
+      <form class="composer" id="composer"><input type="text" id="msg" placeholder="Tell the assistant something about yourself…" autocomplete="off"><button class="btn primary" id="send">Send</button></form>
+    </div>
+
+    <div class="panel">
+      <div class="ph"><h2>Write path</h2><span class="sub">each message, live</span><div class="right" id="writeStat"></div></div>
+      <div class="pb"><div class="stages" id="stages"></div></div>
+    </div>
+
+    <div class="panel">
+      <div class="ph"><h2>Memory</h2><span class="sub">facts with validity in time</span>
+        <div class="right"><div class="seg" id="memView"><button data-m="timeline" class="on">Timeline</button><button data-m="facts">Facts</button><button data-m="log">Audit log</button></div></div></div>
+      <div class="counters" id="counters"></div>
+      <div class="pb" id="memBody"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ ASK -->
+<section class="view" id="v-ask">
+  <div class="panel" style="padding:18px">
+    <div class="ask-top">
+      <input type="text" id="askQ" placeholder="Ask about the user, e.g. Where do I live now?">
+      <span class="muted">asked on</span><input type="date" id="askDate" value="2025-06-25">
+      <span class="muted">context budget</span>
+      <div class="seg" id="budget"><button data-b="256" class="on">256</button><button data-b="512">512</button><button data-b="1024">1024</button><button data-b="2048">2048</button></div>
+      <button class="btn primary" id="askGo">Ask both</button>
+    </div>
+    <div class="sugg" id="sugg"></div>
+    <div class="storywarn" id="storyWarn" hidden></div>
+  </div>
+  <div class="modeline" id="modeline"></div>
+  <div class="vs" id="vs"></div>
+</section>
+
+<!-- ============================================================ BENCH -->
+<section class="view" id="v-bench">
+  <div class="bench">
+    <div class="panel">
+      <div class="ph"><h2>LongMemEval · 500 histories</h2><span class="sub">~115k tokens each</span></div>
+      <div style="padding:10px 14px 0"><input type="search" id="qsearch" placeholder="Search questions…" style="width:100%"></div>
+      <div class="filters" id="qfilters"></div>
+      <div class="pb"><div class="qlist" id="qlist"></div></div>
+    </div>
+    <div class="panel"><div class="pb" id="qdetail"><div class="muted" style="padding:40px;text-align:center">Pick a question on the left.</div></div></div>
+  </div>
+</section>
+
+<!-- ============================================================ RESULTS -->
+<section class="view" id="v-results"><div id="resultsBody"></div></section>
+
+<!-- ============================================================ HOW -->
+<section class="view" id="v-how"><div class="how" id="howBody"></div></section>
+</main>
+
+<aside class="drawer" id="drawer"></aside>
+<div class="tip" id="tip"></div>
+<div class="toast" id="toast"></div>
+<script src="/static/app.js?v=20261104b"></script>
+</body>
+</html>

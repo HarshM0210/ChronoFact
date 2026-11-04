@@ -1,0 +1,21 @@
+# Python 3.12. The versions the reported run used.
+torch==2.14.0
+transformers==5.20.2
+tokenizers==0.23.3
+sentencepiece==0.2.2
+huggingface_hub==2.4.0
+vllm==0.33.0                 # the local LLM server (scripts/serve_llama.sh); needs a CUDA GPU
+openai==3.42.1               # OpenAI-compatible client for vLLM and the Meta Model API
+httpx==0.28.1
+faiss-cpu==1.15.1
+rank-bm25==0.2.2
+dateparser==1.4.3
+numpy==2.3.5
+pandas==3.1.0
+pyarrow==26.0.0
+matplotlib==3.11.2
+tabulate==0.10.0
+PyYAML==6.0.3
+fastapi==0.136.3             # demo app
+uvicorn==0.54.0              # demo app
+pytest==9.2.0

@@ -1,0 +1,77 @@
+{
+ "title": "Six months with Maya",
+ "note": "Scripted user messages for a reproducible demo recording; every assistant reply, extracted fact, verification and memory update is produced live by the pipeline.",
+ "steps": [
+  {
+   "date": "2025-01-06",
+   "text": "Hi! I just moved to Berlin for a new job as a data analyst at Zalando. Any tips for finding a flat near Friedrichshain?",
+   "shows": "facts extracted from a request for help"
+  },
+  {
+   "date": "2025-01-06",
+   "text": "Thanks, that's really helpful!",
+   "shows": "salience filter: no LLM call"
+  },
+  {
+   "date": "2025-01-20",
+   "text": "My cat Luna hates the cold here. I run 3 times a week to stay sane this winter.",
+   "shows": "several facts from one message"
+  },
+  {
+   "date": "2025-02-14",
+   "text": "I drive a 2015 Honda Civic but parking in Berlin is a nightmare. Should I keep it?",
+   "shows": "a possession with details"
+  },
+  {
+   "date": "2025-02-20",
+   "text": "If I ever win the lottery I'd buy a sailboat and live on it. Anyway, what's a good stretching routine after a run?",
+   "shows": "hypotheticals are not stored as facts"
+  },
+  {
+   "date": "2025-03-03",
+   "text": "Update: I sold my Civic last weekend, so I'm biking everywhere now.",
+   "shows": "negation closes a fact; relative date resolved"
+  },
+  {
+   "date": "2025-04-10",
+   "text": "Big news: I quit my data analyst job at Zalando. I'm now a product manager at Spotify!",
+   "shows": "a job change: the old job is closed and kept as history"
+  },
+  {
+   "date": "2025-06-02",
+   "text": "We moved to Munich two weeks ago because my partner got a job at BMW.",
+   "shows": "residence supersedes Berlin, dated two weeks earlier"
+  },
+  {
+   "date": "2025-06-20",
+   "text": "Luna loves the new balcony. I now run 5 times a week, I'm training for my first half marathon.",
+   "shows": "a count updates; a repeated fact is not duplicated"
+  }
+ ],
+ "questions": [
+  {
+   "q": "Where do I live now?",
+   "date": "2025-06-25"
+  },
+  {
+   "q": "Where did I live before Munich?",
+   "date": "2025-06-25"
+  },
+  {
+   "q": "What car did I have in February?",
+   "date": "2025-06-25"
+  },
+  {
+   "q": "What was my running routine in March?",
+   "date": "2025-06-25"
+  },
+  {
+   "q": "What is my job?",
+   "date": "2025-06-25"
+  },
+  {
+   "q": "What is my sister's name?",
+   "date": "2025-06-25"
+  }
+ ]
+}

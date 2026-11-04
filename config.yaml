@@ -1,0 +1,155 @@
+# ChronoFact (Model5). Meta models only. Numbers are the README's unless a comment says which measurement moved them.
+#
+# A PROFILE picks the models and the settings that go with them (deep-merged over this file; CF_PROFILE selects one,
+# default `local`):
+#   local   every LLM role on Llama-3.1-8B-Instruct served locally by vLLM (scripts/serve_llama.sh). The reported run.
+#   spark   the Muse Spark design: write path + answers on muse-spark-1.3-contributor, judge on muse-spark-1.3, with
+#           the settings the contributor tier needs (batched extraction/labeling, a cost gate) and the thresholds
+#           calibrated on Spark's output.
+#   hybrid  write path + answers on local Llama, judge on Muse Spark (only short question/answer texts reach the API).
+# Results go to results/ for `local` and results_<profile>/ otherwise (CF_RESULTS overrides).
+profile: local
+
+llm:
+  cache_path: llm_cache.sqlite          # inside the results directory
+  providers:
+    local: {base_url: "http://127.0.0.1:8017/v1", api_key_env: null}
+    meta:  {base_url: "https://api.meta.ai/v1", api_key_env: META_API_KEY}
+  models:
+    llama:
+      provider: local
+      name: llama-3.1-8b-instruct       # served name (scripts/serve_llama.sh)
+      rpm: null                         # no request limit
+      price_per_1m: {input: 0.0, cached_input: 0.0, output: 0.0}
+      reasoning_effort: null
+      reasoning_allowance: 0
+    spark:
+      provider: meta
+      name: muse-spark-1.3
+      rpm: 1200                         # API limit 3,000 req/min (x-ratelimit headers), with headroom
+      price_per_1m: {input: 1.25, cached_input: 0.15, output: 4.25}
+      reasoning_effort: minimal         # the lowest the API accepts ("none" is rejected)
+      reasoning_allowance: 1024         # hidden reasoning counts against max_tokens; added on top of the role limit
+    spark_contributor:
+      provider: meta
+      name: muse-spark-1.3-contributor
+      rpm: 138                          # API limit 150 req/min, with headroom
+      price_per_1m: {input: 0.10, cached_input: 0.002, output: 0.20}
+      reasoning_effort: minimal
+      reasoning_allowance: 1024
+  roles:                                # README section 11 limits (per-turn extraction, per-fact labeling)
+    extractor:  {model: llama, max_tokens: 512}
+    labeler:    {model: llama, max_tokens: 200}
+    controller: {model: llama, max_tokens: 256}
+    answerer:   {model: llama, max_tokens: 128}
+    judge:      {model: llama, max_tokens: 128}    # raised to 512 only if the judge pilot shows cut-off output
+  max_inflight: 32                      # per process and model
+  outage_max_s: 7200                    # wait up to 2 hours for a server or the API to come back
+  spend_cap_usd: 120.0                  # hard stop for all paid calls together
+  # Meta API safety (the account was blocked once for "repeated policy violations": benchmark conversations tripped the
+  # content filter and a fallback re-sent them). A refused request is recorded and never sent again, nothing is ever
+  # re-sent in another form, a 401/403 stops every process at once, and after max_rejections refusals no further
+  # request goes to that provider until the operator clears results/<run>/policy_stop.json.
+  policy_guard: {providers: [meta], max_rejections: 3}
+
+# token counter for the context budgets: the answerer's tokenizer (files only)
+tokenizer: {repo: unsloth/Llama-3.1-8B-Instruct, revision: 4699cc75b550f9c6f3173fb80f4703b62d946aa5}
+
+embeddings:                             # Contriever (Meta FAIR), one encoder for questions and context
+  name: contriever                      # part of the embedding cache key
+  query: facebook/contriever-msmarco
+  context: facebook/contriever-msmarco
+  pooling: mean
+  max_tokens: 512
+  batch_size: 64
+  cache_path: embed_cache.sqlite        # inside the results directory
+
+nli:
+  model: facebook/bart-large-mnli
+  batch_size: 16
+  cache_path: nli_cache.sqlite          # inside the results directory
+
+write:
+  batch_turns: 60
+  max_facts_per_turn: 6
+  extract_chunk: 1                      # user messages per extraction call (1 = README per-turn prompt)
+  extract_chunk_words: 2500             # word cap of one batched extraction call
+  label_chunk: 1                        # facts per labeling call (1 = README per-fact prompt)
+  # Llama 8B answers kind "event" for 91% of facts even when its own family is a state/attribute (pilot: 3,219 of 4,661
+  # labels); README C.11 would then file them all as other_event. On a contradiction the family decides the kind.
+  label_kind_from_family: true
+  min_entail: 0.6                       # verify + rich statement (README)
+  # Contriever cosine thresholds, calibrated with Spark-labelled pairs (scripts/calibration/calibrate.py):
+  entity_merge_sim: 0.90                # entities AND slot merge; name pairs at cosine 0.85-0.90 are only 70% the same
+  near_dup_high: 0.90                   # same-value cosine
+  guard_contradiction: 0.50
+  controller_top_k: 10
+  event_window_days: 3
+  conflict_window_h: 24
+  rich_max_words: 36
+
+# W2 rules a and b: README values (scripts/calibration/calibrate_w2.py found no looser setting without false updates).
+# rule_c: same-slot updates judged by the judge-role LLM; needs a judge that agrees with Spark's labels
+# (scripts/calibration/check_rule_c.py: Llama 8B precision 0.085, so off for local).
+w2: {num_sim: 0.80, skel_sim: 0.90, slot_sim: 0.92, contradiction: 0.50, rule_c: false}
+
+read:
+  k: 20
+  rrf_k: 60
+  candidate_turns: 80
+  entity_seed_sim: 0.80                 # name pairs at 0.80-0.85: 57% the same entity; a seed only admits a fact
+  entity_ngrams: 40
+  w_topic: 0.30
+  fact_dup: 0.95
+  max_facts: 15
+  facts_budget_frac: 0.35
+  stop_min_tokens: 32
+  # extended below the README's 0.30: Contriever cosines run lower (unrelated names 0.14-0.57). Same rule picks tau.
+  tau_grid: [0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70]
+  tau_target: 0.915
+
+answer:
+  reason_max_tokens: 512
+  short_max_tokens: 128
+  split: null                           # {model: <model>, share: <0-1>}: that share of QUESTIONS answered on <model>
+
+steps:                                  # optional steps (the Meta API ones are on in the spark profile)
+  batch_check: false                    # A/B gate: may batched extraction lose facts? picks write.extract_chunk
+  cost_gate: false                      # stop once so the operator compares the console bill with computed spend
+
+eval:
+  budgets: [256, 512, 1024, 2048]
+  checkpoint_fractions: [0.0, 0.25, 0.5, 0.75, 1.0]
+  bootstrap: 1000
+  judge_pilot_rows: 1000
+
+resources:
+  ingest_workers: 24                    # 144 histories in flight keep one vLLM server busy
+  ingest_per_worker: 6
+  retrieve_workers: 30
+  torch_threads_per_worker: 2
+
+profiles:
+  local: {}
+  hybrid:
+    llm:
+      roles:
+        judge: {model: spark, max_tokens: 128}
+  spark:
+    llm:
+      roles:
+        extractor:  {model: spark_contributor, max_tokens: 3072}   # one call = up to write.extract_chunk messages
+        labeler:    {model: spark_contributor, max_tokens: 4096}   # one call = up to write.label_chunk facts
+        controller: {model: spark_contributor, max_tokens: 256}
+        answerer:   {model: spark_contributor, max_tokens: 128}
+        judge:      {model: spark, max_tokens: 128}
+      max_inflight: 48
+    write:
+      extract_chunk: 5                  # the batch_check step picks 5, 3 or 2 (measured: 3)
+      label_chunk: 10                   # A/B on 60 facts: 10 per call enriched 27 statements, 20 dropped details
+      min_entail: 0.4                   # calibrated on Spark's facts (NLI 0.4-0.6: 71-77% supported)
+    w2: {rule_c: true}                  # Spark judges same-slot updates (the labels rule c was calibrated on)
+    answer:
+      split: {model: spark, share: 0.34}   # a third of the questions on the 1,200 req/min tier, to fit a day
+    steps: {batch_check: true, cost_gate: true}
+    resources: {ingest_workers: 12, ingest_per_worker: 4}
