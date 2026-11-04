@@ -11,7 +11,7 @@ facts with provenance**, keeps their history when they change, and answers every
 **+13.6 points over RAG** on LongMemEval · **2.5× on temporal reasoning** · **2.0× across sessions** · **3.9× fewer
 false "I don't know"** · **$0 API cost on one GPU**
 
-> 🎬 Demo video: _(link)_
+> 🎬 Demo video: [ChronoFact](https://youtu.be/Qrsvf5Yh5EU)
 
 ![Live memory: every message streams through the write path; Berlin is superseded by Munich and kept as history](docs/live.png)
 
