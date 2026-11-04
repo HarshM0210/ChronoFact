@@ -97,8 +97,11 @@ def main():
     # rows
     df = pd.read_parquet(rpath("final", "runs.parquet"))
     k = ["system", "question_id", "checkpoint", "budget"]
-    if len(df) != 30000:
-        bad(f"rows: {len(df)}, expected 30000")
+    want = len(P.SYSTEMS) * len(a + b) * len(P.FRACS) * len(P.BUDGETS)
+    if len(df) != want:
+        bad(f"rows: {len(df)}, expected {want}")
+    if set(df.system.unique()) != set(P.SYSTEMS):
+        bad(f"systems in the rows {sorted(df.system.unique())}, expected {P.SYSTEMS}")
     if df.duplicated(k).any():
         bad(f"rows: {int(df.duplicated(k).sum())} duplicates")
     m5 = df[df.system == "MODEL5"]

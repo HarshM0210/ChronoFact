@@ -1,10 +1,9 @@
-"""ChronoFact read path (README section 7) and the RAG baselines (README section 9). No LLM call.
+"""ChronoFact read path (README section 7) and the RAG baseline (README section 9). No LLM call.
 
 retrieve(question, as_of, budget, system, tau, visible_until):
   MODEL5       facts (gate tau) + turns, skip packing
-  RAG_harness  turns only, skip packing
   RAG_plain    turns only, stop packing
-One Retriever is kept per opened snapshot, so the 4 budgets x 3 systems of a checkpoint share the store
+One Retriever is kept per opened snapshot, so the 4 budgets x 2 systems of a checkpoint share the store
 connection, the indexes and the per-question work (README 7, last paragraph).
 """
 from collections import defaultdict
@@ -221,6 +220,8 @@ class Retriever:
                 f_used += n
             if not flines:
                 f_used = 0
+        if system not in ("MODEL5", "RAG_plain"):
+            raise ValueError(f"unknown system {system!r}")
         packer = "stop" if system == "RAG_plain" else "skip"
         elines, eitems, used = self._pack_turns(P["cands"], budget, f_used, packer)       # 8
         lines = ([FACT_HEADER] + flines + [""]) if flines else []                         # 9

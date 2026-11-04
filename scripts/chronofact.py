@@ -504,7 +504,7 @@ def step_answer():
 
 # ================================================================== 10 judge pilot, 11 judge
 def _pilot_rows():
-    """the first 1,000 rows, all three systems mixed: questions in halves order, then system, checkpoint, budget"""
+    """the first 1,000 rows, both systems mixed: questions in halves order, then system, checkpoint, budget"""
     rows = []
     for q in all_qids():
         for s in P.SYSTEMS:

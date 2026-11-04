@@ -4,8 +4,7 @@
                 (chronofact.writer, Llama-3.1-8B via the local vLLM server, Contriever, BART-MNLI) and its stages are
                 streamed to the page as they happen (Server-Sent Events)
   Ask           one question, the same token budget: ChronoFact (MODEL5) and RAG over raw transcripts (RAG_plain),
-                exactly as in the benchmark (chronofact.reader + answer). The page shows these two systems; the
-                README reports the third benchmark system (RAG_harness) as well.
+                exactly as in the benchmark (chronofact.reader + answer).
   Forget        deletes a fact and the messages it came from (memory and transcript index)
   Benchmark     the finished LongMemEval run (results/): every history, context, answer and verdict, read-only
   Results       the report tables of results/final
@@ -324,7 +323,7 @@ def results():
            "audit": json.load(open(os.path.join(F, "integrity_audit.json"))),
            "judge_pilot": load_step("judge_pilot"), "ingest": load_step("ingest"), "w2": load_step("w2"),
            "relevance": {h: load_step("relevance")[h]["chosen_tau"] for h in ("A", "B")},
-           "models": CFG["llm"]["models"], "embedder": load_step("embedder")["chosen"], "nli": CFG["nli"]["model"]}
+           "models": CFG["llm"]["models"], "embedder": CFG["embeddings"]["context"], "nli": CFG["nli"]["model"]}
     return json.loads(json.dumps(out, default=lambda o: o.item() if hasattr(o, "item") else str(o)).replace("NaN", "null"))
 
 

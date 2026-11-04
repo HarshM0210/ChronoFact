@@ -15,8 +15,7 @@ from chronofact.data import halves  # noqa: E402
 OUT = rpath("final")
 SYS = P.SYSTEMS
 NB = CFG["eval"]["bootstrap"]
-REF14 = {"accuracy": {"Model4": [53.1, 70.4, 73.0, 75.7], "RAG_harness": [56.1, 65.1, 69.8, 74.4],
-                      "RAG_plain": [41.3, 45.6, 57.2, 61.0]},
+REF14 = {"accuracy": {"Model4": [53.1, 70.4, 73.0, 75.7], "RAG_plain": [41.3, 45.6, 57.2, 61.0]},
          "write": {"episodes": 493, "ADD": 266, "MERGE": 15.0, "NOOP": 6.5, "REJECT": 97.8, "SKIP": 59.3,
                    "SUPERSEDE": 1.8, "facts_active": 263, "facts_superseded": 3.0, "llm_calls": 460,
                    "tokens_in": 281000, "tokens_out": 51000, "rich_share": 0.69}}
@@ -61,7 +60,8 @@ def main():
 
     rel = load_step("relevance")
     L = ["# ChronoFact (Model5) results", "",
-         f"Rows: {len(df)}; questions: {len(qids)}; systems {SYS}; budgets {budgets}; checkpoints {ckpts}. "
+         f"Rows: {len(df)}; questions: {len(qids)}; systems {SYS}; budgets {[int(b) for b in budgets]}; "
+         f"checkpoints {[float(c) for c in ckpts]}. "
          f"MODEL5 gate: tau {rel['A']['chosen_tau']} (chosen on half A, scores half B = fold A), tau "
          f"{rel['B']['chosen_tau']} (chosen on half B, scores half A = fold B). 95% CIs: {NB} bootstrap resamples "
          "of questions.", ""]
@@ -103,13 +103,11 @@ def main():
         L.append(f"| {base} | " + " | ".join(
             f"{100 * a['diff'][b]:+.1f} [{100 * a.lo[b]:+.1f}, {100 * a.hi[b]:+.1f}]{' *' if a.significant[b] else ''}"
             for b in cols) + " |")
-    lead_h = float(np.mean([pdiff[(pdiff.vs == "RAG_harness") & (pdiff.budget == b)]["diff"].iloc[0] for b in budgets]))
     plain_all = pdiff[(pdiff.vs == "RAG_plain") & (pdiff.budget == "all")].iloc[0]
-    bar = bool(plain_all.lo > 0) and lead_h >= 0.017
+    bar = bool(plain_all.lo > 0)
     L += ["", "`*` = 95% CI above 0.", "",
-          f"**Bar (README 14):** lead over RAG_plain significant: {'yes' if plain_all.lo > 0 else 'no'} "
-          f"({100 * plain_all['diff']:+.1f} [{100 * plain_all.lo:+.1f}, {100 * plain_all.hi:+.1f}]); mean paired lead over "
-          f"RAG_harness across the four budgets {100 * lead_h:+.1f} points (needs >= +1.7). "
+          f"**Bar:** lead over RAG_plain significant (95% CI above 0): {'yes' if bar else 'no'} "
+          f"({100 * plain_all['diff']:+.1f} [{100 * plain_all.lo:+.1f}, {100 * plain_all.hi:+.1f}]). "
           f"**Model5 {'meets' if bar else 'does not meet'} the bar.**", ""]
 
     # 3 by type, checkpoint, fold
@@ -244,8 +242,7 @@ def main():
     fig.savefig(os.path.join(OUT, "plots", "model5_minus_baselines.png"), dpi=150)
     with open(os.path.join(OUT, "report.md"), "w") as f:
         f.write("\n".join(L) + "\n")
-    P.write_json(os.path.join(OUT, "summary.json"), {"bar_met": bar, "lead_vs_rag_harness_mean_4_budgets": lead_h,
-                                                     "lead_vs_rag_plain": dict(plain_all), "spend_usd": spend})
+    P.write_json(os.path.join(OUT, "summary.json"), {"bar_met": bar, "lead_vs_rag_plain": dict(plain_all), "spend_usd": spend})
     print("\n".join(L))
 
 

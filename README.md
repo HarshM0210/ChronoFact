@@ -223,24 +223,13 @@ re-sent in another form, a 401/403 stops every process at once, and after 3 refu
 until `policy_stop.json` in the results directory is reviewed and deleted. A spend cap stops all paid calls.
 `scripts/calibration/` holds the calibrations behind the thresholds in `config.yaml`.
 
-### Demo app
-
-```bash
-bash scripts/serve_demo.sh     # http://127.0.0.1:8090 (needs the LLM server and a finished run in results/)
-```
-
-Live memory (chat; every message streams through the real write path), ask across time, a benchmark explorer over all
-500 histories with each system's context, answer and verdict, results, and how it works. `demo/tests/` holds a
-180-check end-to-end UI test (Chrome + Node 22+).
-
 ## Repository
 
 ```
 chronofact/   config, LLM layer (cache, rate limits, policy guard), models, store (snapshots, forget),
               write path, W2 reconciliation, read path, answers + judge, pipeline units
-scripts/      chronofact.py (the runner), report, audit, bundle, download_models, serve_llama, serve_demo, env,
-              calibration/
-demo/         demo server, scripted story, web app, UI tests
+scripts/      chronofact.py (the runner), report, audit, bundle, download_models, serve_llama, env, calibration/
+demo/         the web app shown in the demo video
 tests/        unit tests
 data/         splits.json (the fixed halves for cross-fitted tuning); the dataset downloads to data/raw/
 docs/         screenshots

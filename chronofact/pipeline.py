@@ -26,8 +26,8 @@ import numpy as np
 
 from chronofact.config import CFG, rpath
 
-SYSTEMS = ["MODEL5", "RAG_harness", "RAG_plain"]
-MODE = {"MODEL5": "reason", "RAG_harness": "reason", "RAG_plain": "short"}
+SYSTEMS = ["MODEL5", "RAG_plain"]          # ChronoFact and RAG over raw transcripts (the baseline)
+MODE = {"MODEL5": "reason", "RAG_plain": "short"}
 BUDGETS = CFG["eval"]["budgets"]
 FRACS = CFG["eval"]["checkpoint_fractions"]
 

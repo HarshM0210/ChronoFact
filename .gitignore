@@ -1,0 +1,18 @@
+# runs, caches and logs (large; produced by the pipeline)
+results/
+results_*/
+demo_data/
+logs/
+data/raw/
+# secrets and machine-specific settings
+.meta_key
+env.local.sh
+# environments
+.venv/
+__pycache__/
+.pytest_cache/
+*.pyc
+.DS_Store
+# large media (the demo video is linked from the README, not stored in git)
+*.MP4
+*.mp4
