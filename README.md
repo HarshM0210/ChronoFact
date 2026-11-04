@@ -108,6 +108,48 @@ memory. The lead below is the combined effect of these parts.
 
 A run writes the full report to `results/final/report.md` (tables, plots, per-type and per-checkpoint numbers, cost).
 
+## Dataset
+
+Every number above comes from **LongMemEval-S (cleaned)**. LongMemEval is a benchmark for the long-term memory of chat
+assistants, published at ICLR 2025 (Wu et al., [references](#references)). Each question comes with its own long chat
+history between one user and an assistant. The answer is spread somewhere in that history, among many unrelated
+sessions.
+
+| | |
+|---|---|
+| source | Hugging Face dataset [`xiaowu0162/longmemeval-cleaned`](https://huggingface.co/datasets/xiaowu0162/longmemeval-cleaned), file `longmemeval_s_cleaned.json` (277 MB) |
+| original | [`xiaowu0162/longmemeval`](https://huggingface.co/datasets/xiaowu0162/longmemeval) and the code at [github.com/xiaowu0162/LongMemEval](https://github.com/xiaowu0162/LongMemEval) |
+| cleaned version | replaces the original release; it removes noisy history sessions that interfered with the correct answer |
+| size | 500 questions, each with its own history: 38–62 sessions (mean 47.7), 396–616 turns (mean 494), ~115k tokens |
+| time span | sessions dated May 2021 to February 2024; every session and every question carries a date |
+| labels | the answer, the ids of the evidence sessions, `has_answer` on the evidence turns, and the question type |
+| license | MIT ([details](#licenses)) |
+
+| question type | questions | of which unanswerable (`_abs`) |
+|---|---|---|
+| temporal reasoning | 133 | 6 |
+| multi-session | 133 | 12 |
+| knowledge update | 78 | 6 |
+| single-session user | 70 | 6 |
+| single-session assistant | 56 | 0 |
+| single-session preference | 30 | 0 |
+| **total** | **500** | **30** |
+
+The results table above counts the 30 unanswerable questions as their own type, "abstention". That is why its other
+type counts are smaller.
+
+**How it is fetched.** The dataset is not stored in this repository. The `setup` step downloads it from
+`https://huggingface.co/datasets/xiaowu0162/longmemeval-cleaned/resolve/main/longmemeval_s_cleaned.json` to
+`data/raw/` (see `chronofact/data.py` and `scripts/chronofact.py`). It records the file's SHA-256 in
+`results/steps/setup.json`. The reported run used the file with SHA-256
+`d6f21ea9d60a0d56f34a05b609c79c88a451d2ae03597821ea3d5a9678c3a442`. If the dataset on Hugging Face changes, the
+checksum will no longer match.
+
+**How it is used.** Each history is replayed in time order through ChronoFact's write path. It is evaluated at 5
+checkpoints, from the history up to the last evidence session to the full history. `data/splits.json` fixes two
+halves of the 500 questions (A: 251, B: 249, seed 42) for cross-fitted tuning: thresholds tuned on one half are
+reported on the other. That file contains only question ids, no dataset text.
+
 ## Run it
 
 ### Requirements
@@ -222,3 +264,74 @@ demo app.
 (`facebook/bart-large-mnli`), Muse Spark (Meta Model API). **Data:** LongMemEval-S cleaned
 (`xiaowu0162/longmemeval-cleaned`). **Libraries:** see `requirements.txt` (vLLM, PyTorch, Transformers, FAISS,
 rank-bm25, dateparser, pandas, FastAPI).
+
+## Licenses
+
+ChronoFact's own code is in this repository. The models and the dataset it uses are not: each is downloaded at the
+commit pinned in `model_pins.json` (models) or from the URL above (dataset), and stays under its own license.
+
+| component | used for | license | source |
+|---|---|---|---|
+| **Llama-3.1-8B-Instruct** (Meta), weights from the ungated mirror `unsloth/Llama-3.1-8B-Instruct` | extraction, labelling, negation control, answers, judge; its tokenizer counts the context budgets | **Llama 3.1 Community License Agreement** (custom; commercial use allowed under its terms) | [meta-llama/Llama-3.1-8B-Instruct](https://huggingface.co/meta-llama/Llama-3.1-8B-Instruct), [license text](https://github.com/meta-llama/llama-models/blob/main/models/llama3_1/LICENSE) |
+| **Contriever** (`facebook/contriever-msmarco`, Meta FAIR) | dense retrieval, entity and slot matching | **CC BY-NC 4.0**: non-commercial use only | [facebookresearch/contriever](https://github.com/facebookresearch/contriever) (the Hugging Face card states no license; the code and model repository's license applies) |
+| **BART-large-MNLI** (`facebook/bart-large-mnli`, Meta) | NLI verification of facts, contradiction checks for supersession | **MIT** | [facebook/bart-large-mnli](https://huggingface.co/facebook/bart-large-mnli) |
+| **Muse Spark 1.3** (Meta Model API) | only in the optional `hybrid` and `spark` profiles, and the labels behind the threshold calibrations | **proprietary**, used through the Meta Model API under Meta's API terms; no weights are distributed | Meta Model API |
+| **LongMemEval-S cleaned** (dataset) | the benchmark | **MIT** | [xiaowu0162/longmemeval-cleaned](https://huggingface.co/datasets/xiaowu0162/longmemeval-cleaned), [github.com/xiaowu0162/LongMemEval](https://github.com/xiaowu0162/LongMemEval) |
+
+What this means in practice:
+
+* **Llama 3.1.** Anyone redistributing the weights, or a product built with them, must include a copy of the license
+  agreement and display "Built with Llama". A model trained or fine-tuned from Llama 3.1 must have a name that begins
+  with "Llama". Use must follow Meta's Llama 3.1 Acceptable Use Policy. Products with more than 700 million monthly
+  active users need a separate license from Meta. This repository does not redistribute the weights: they are
+  downloaded by `scripts/download_models.py`.
+* **Contriever is non-commercial.** ChronoFact as configured may be used for research and evaluation. A commercial
+  deployment would need to replace Contriever with an embedding model whose license allows commercial use.
+* **BART-large-MNLI** is a fine-tune of BART-large on the MultiNLI corpus; MultiNLI has its own terms of use.
+* **LongMemEval** is released under MIT. Its filler sessions are drawn from ShareGPT and UltraChat (as the LongMemEval
+  repository describes), whose terms may also apply to that text. This repository does not redistribute the dataset:
+  `data/splits.json` holds only question ids.
+* Libraries (vLLM, PyTorch, Transformers, FAISS, rank-bm25, dateparser, pandas, FastAPI, ...) keep their own licenses;
+  see `requirements.txt`.
+
+## References
+
+**Dataset and models used**
+
+1. Di Wu, Hongwei Wang, Wenhao Yu, Yuwei Zhang, Kai-Wei Chang, Dong Yu. *LongMemEval: Benchmarking Chat Assistants on
+   Long-Term Interactive Memory.* ICLR 2025. [arXiv:2410.10813](https://arxiv.org/abs/2410.10813)
+2. Llama Team, AI @ Meta. *The Llama 3 Herd of Models.* 2024. [arXiv:2407.21783](https://arxiv.org/abs/2407.21783)
+3. Gautier Izacard, Mathilde Caron, Lucas Hosseini, Sebastian Riedel, Piotr Bojanowski, Armand Joulin, Edouard Grave.
+   *Unsupervised Dense Information Retrieval with Contrastive Learning* (Contriever). TMLR 2022.
+   [arXiv:2112.09118](https://arxiv.org/abs/2112.09118)
+4. Mike Lewis, Yinhan Liu, Naman Goyal, Marjan Ghazvininejad, Abdelrahman Mohamed, Omer Levy, Veselin Stoyanov, Luke
+   Zettlemoyer. *BART: Denoising Sequence-to-Sequence Pre-training for Natural Language Generation, Translation, and
+   Comprehension.* ACL 2020. [arXiv:1910.13461](https://arxiv.org/abs/1910.13461)
+5. Adina Williams, Nikita Nangia, Samuel R. Bowman. *A Broad-Coverage Challenge Corpus for Sentence Understanding
+   through Inference* (MultiNLI). NAACL 2018. [arXiv:1704.05426](https://arxiv.org/abs/1704.05426)
+
+**Memory for LLM agents (related work)**
+
+6. Charles Packer, Sarah Wooders, Kevin Lin, Vivian Fang, Shishir G. Patil, Ion Stoica, Joseph E. Gonzalez. *MemGPT:
+   Towards LLMs as Operating Systems.* 2023. [arXiv:2310.08560](https://arxiv.org/abs/2310.08560)
+7. Prateek Chhikara, Dev Khant, Saket Aryan, Taranjeet Singh, Deshraj Yadav. *Mem0: Building Production-Ready AI
+   Agents with Scalable Long-Term Memory.* 2025. [arXiv:2504.19413](https://arxiv.org/abs/2504.19413)
+8. Preston Rasmussen, Pavlo Paliychuk, Travis Beauvais, Jack Ryan, Daniel Chalef. *Zep: A Temporal Knowledge Graph
+   Architecture for Agent Memory.* 2025. [arXiv:2501.13956](https://arxiv.org/abs/2501.13956)
+9. Wujiang Xu, Zujie Liang, Kai Mei, Hang Gao, Juntao Tan, Yongfeng Zhang. *A-MEM: Agentic Memory for LLM Agents.*
+   2025. [arXiv:2502.12110](https://arxiv.org/abs/2502.12110)
+10. Bernal Jiménez Gutiérrez, Yiheng Shu, Yu Gu, Michihiro Yasunaga, Yu Su. *HippoRAG: Neurobiologically Inspired
+    Long-Term Memory for Large Language Models.* NeurIPS 2024. [arXiv:2405.14831](https://arxiv.org/abs/2405.14831)
+11. Joon Sung Park, Joseph C. O'Brien, Carrie J. Cai, Meredith Ringel Morris, Percy Liang, Michael S. Bernstein.
+    *Generative Agents: Interactive Simulacra of Human Behavior.* UIST 2023.
+    [arXiv:2304.03442](https://arxiv.org/abs/2304.03442)
+12. Guanzhi Wang, Yuqi Xie, Yunfan Jiang, Ajay Mandlekar, Chaowei Xiao, Yuke Zhu, Linxi Fan, Anima Anandkumar.
+    *Voyager: An Open-Ended Embodied Agent with Large Language Models.* 2023.
+    [arXiv:2305.16291](https://arxiv.org/abs/2305.16291)
+
+**Benchmarks for long-term memory**
+
+13. Adyasha Maharana, Dong-Ho Lee, Sergey Tulyakov, Mohit Bansal, Francesco Barbieri, Yuwei Fang. *Evaluating Very
+    Long-Term Conversational Memory of LLM Agents* (LoCoMo). ACL 2024. [arXiv:2402.17753](https://arxiv.org/abs/2402.17753)
+14. Yuanzhe Hu, Yu Wang, Julian McAuley. *Evaluating Memory in LLM Agents via Incremental Multi-Turn Interactions.*
+    2025. [arXiv:2507.05257](https://arxiv.org/abs/2507.05257)
