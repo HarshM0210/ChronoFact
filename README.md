@@ -111,7 +111,7 @@ A run writes the full report to `results/final/report.md` (tables, plots, per-ty
 ## Dataset
 
 Every number above comes from **LongMemEval-S (cleaned)**. LongMemEval is a benchmark for the long-term memory of chat
-assistants, published at ICLR 2025 (Wu et al.,[LongMemEval: Benchmarking chat assistants on long-
+assistants, published at ICLR 2025 (Wu et al., [LongMemEval: Benchmarking chat assistants on long-
 term interactive memory,](https://github.com/xiaowu0162/LongMemEval)). Each question comes with its own long chat
 history between one user and an assistant. The answer is spread somewhere in that history, among many unrelated
 sessions.
@@ -170,7 +170,7 @@ Only the LLM server uses the GPU. Time for the full run on the reported setup: i
 ### Steps
 
 ```bash
-git clone <this repo> chronofact && cd chronofact
+git clone https://github.com/HarshM0210/ChronoFact.git && cd chronofact
 python3.12 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt                          # pinned versions (PyTorch, vLLM, ...)
 source scripts/env.sh                                     # environment for every command (run it in each new shell)
